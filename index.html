@@ -193,6 +193,18 @@
 </head>
 
 <body>
+
+<!-- 🔐 CONTRASEÑA AGREGADA -->
+<script>
+let pass = prompt("Ingrese la contraseña para acceder:");
+
+if (pass !== "muracapo20") {
+    document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>ACCESO DENEGADO</h1>";
+}
+</script>
+<!-- 🔐 FIN CONTRASEÑA -->
+
+
   <div class="container">
 
     <h1>Polirubro El Mura</h1>
@@ -248,30 +260,19 @@
 
     async function buscarProducto() {
       const texto = document.getElementById("buscar").value.toLowerCase().trim();
-      console.log("Texto de búsqueda (normalizado):", texto); // Depuración
       lista.innerHTML = "";
       const q = await getDocs(collection(db, "productos"));
       const productosFiltrados = [];
 
       q.forEach((docu) => {
         const p = docu.data();
-        // Verificar que los campos existan y sean strings
-        if (p.nombre && typeof p.nombre === 'string' && p.categoria && typeof p.categoria === 'string') {
-          const nombreLower = p.nombre.toLowerCase();
-          const categoriaLower = p.categoria.toLowerCase();
-          console.log(`Procesando producto: "${p.nombre}" (lower: "${nombreLower}"), Categoría: "${p.categoria}" (lower: "${categoriaLower}")`); // Depuración
-          if (nombreLower.includes(texto) || categoriaLower.includes(texto)) {
-            console.log(`Coincide con "${texto}"`); // Depuración
+        if (p.nombre && p.categoria) {
+          if (p.nombre.toLowerCase().includes(texto) || p.categoria.toLowerCase().includes(texto)) {
             productosFiltrados.push({ id: docu.id, ...p });
-          } else {
-            console.log(`No coincide con "${texto}"`); // Depuración
           }
-        } else {
-          console.log(`Producto con campos faltantes o inválidos:`, p); // Depuración
         }
       });
 
-      console.log("Productos filtrados:", productosFiltrados); // Depuración
       mostrarProductosAgrupados(productosFiltrados);
     }
 
@@ -285,15 +286,13 @@
         agrupados[p.categoria].push(p);
       });
 
-      console.log("Productos agrupados:", agrupados); // Depuración
-
       if (Object.keys(agrupados).length === 0) {
-        lista.innerHTML = '<div class="no-resultados">No se encontraron productos que coincidan con tu búsqueda.</div>';
+        lista.innerHTML = '<div class="no-resultados">No se encontraron productos.</div>';
         return;
       }
 
       for (const categoria in agrupados) {
-        const categoriaId = categoria.replace(/\s+/g, '-').toLowerCase(); // ID único para el toggle
+        const categoriaId = categoria.replace(/\s+/g, '-').toLowerCase();
         lista.innerHTML += `
           <div class="categoria-header" onclick="toggleCategoria('${categoriaId}')">
             ${categoria}
@@ -324,16 +323,11 @@
       }
     }
 
-    function toggleCategoria(categoriaId) {
-      const content = document.getElementById(`content-${categoriaId}`);
-      const arrow = document.getElementById(`arrow-${categoriaId}`);
-      if (content.classList.contains('show')) {
-        content.classList.remove('show');
-        arrow.textContent = '▶';
-      } else {
-        content.classList.add('show');
-        arrow.textContent = '▼';
-      }
+    function toggleCategoria(id) {
+      const content = document.getElementById(`content-${id}`);
+      const arrow = document.getElementById(`arrow-${id}`);
+      content.classList.toggle("show");
+      arrow.textContent = content.classList.contains("show") ? "▼" : "▶";
     }
 
     async function agregarProducto() {
@@ -393,5 +387,6 @@
 
 </body>
 </html>
+
 
 
