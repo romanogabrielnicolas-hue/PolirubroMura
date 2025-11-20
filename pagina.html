@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Polirubro El Mura - Sistema de Productos</title>
+
+  <!-- 🔐 BLOQUEO TOTAL CON CONTRASEÑA -->
+  <script>
+    // Oculta toda la página antes de validar
+    document.documentElement.style.display = "none";
+
+    window.onload = function() {
+      let pass = prompt("Ingrese la contraseña para acceder:");
+
+      if (pass !== "beatriz24") {
+        document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>ACCESO DENEGADO</h1>";
+      } else {
+        document.documentElement.style.display = "block"; // Muestra el sitio
+      }
+    }
+  </script>
+  <!-- 🔐 FIN CONTRASEÑA -->
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef1f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      padding-top: 30px;
+    }
+
+    .container {
+      background: white;
+      width: 90%;
+      max-width: 450px;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+
+    .subtitulo {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    h3 {
+      color: #333;
+      border-left: 4px solid #007bff;
+      padding-left: 8px;
+      margin-top: 25px;
+    }
+
+    .categoria-header {
+      color: #fff;
+      background: linear-gradient(135deg, #28a745, #20c997);
+      padding: 12px 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s;
+    }
+
+    .categoria-header:hover {
+      background: linear-gradient(135deg, #218838, #17a2b8);
+    }
+
+    .categoria-content {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .categoria-content.show {
+      display: block;
+    }
+
+    .productos-grid {
+      display: grid;
+      gap: 15px;
+    }
+
+    .producto-card {
+      background: #fff;
+      border: 1px solid #e9ecef;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .producto-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .producto-info {
+      margin-bottom: 10px;
+    }
+
+    .producto-nombre {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .producto-precio {
+      font-size: 16px;
+      color: #007bff;
+      margin: 5px 0;
+    }
+
+    .producto-categoria {
+      font-size: 14px;
+      color: #6c757d;
+    }
+
+    .acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .acciones button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1>Polirubro El Mura</h1>
+    <div class="subtitulo">Sistema de Gestión de Productos</div>
+
+    <h3>Agregar Producto</h3>
+    <input id="nombre" placeholder="Nombre del producto">
+    <input id="precio" placeholder="Precio" type="number">
+    <input id="categoria" placeholder="Categoría (Ej: panadería, comida, limpieza)">
+    <button onclick="agregarProducto()">Guardar</button>
+
+    <h3>Buscar Producto</h3>
+    <input id="buscar" placeholder="Buscar por nombre o categoría..." oninput="buscarProducto()">
+
+    <h3>Lista de Productos</h3>
+    <div id="lista"></div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, getDocs, 
+      updateDoc, deleteDoc, doc 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCoVvrs0lgLwuHgNnjH475A27YwmCTQpqM",
+      authDomain: "productos-5d813.firebaseapp.com",
+      projectId: "productos-5d813",
+      storageBucket: "productos-5d813.firebasestorage.app",
+      messagingSenderId: "575979588178",
+      appId: "1:575979588178:web:c1b863dee0c6d9d86ced8b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const lista = document.getElementById("lista");
+
+    async function cargarProductos() {
+      lista.innerHTML = "";
+      const q = await getDocs(collection(db, "productos"));
+      const productos = [];
+
+      q.forEach((docu) => {
+        productos.push({ id: docu.id, ...docu.data() });
+      });
+
+      mostrarProductosAgrupados(productos);
+    }
+
+    async function buscarProducto() {
+      const texto = document.getElementById("buscar").value.toLowerCase().trim();
+      lista.innerHTML = "";
+      const q = await getDocs(collection(db, "productos"));
+      const productosFiltrados = [];
+
+      q.forEach((docu) => {
+        const p = docu.data();
+        if (p.nombre && p.categoria) {
+          if (p.nombre.toLowerCase().includes(texto) || p.categoria.toLowerCase().includes(texto)) {
+            productosFiltrados.push({ id: docu.id, ...p });
+          }
+        }
+      });
+
+      mostrarProductosAgrupados(productosFiltrados);
+    }
+
+    function mostrarProductosAgrupados(productos) {
+      const agrupados = {};
+
+      productos.forEach((p) => {
+        if (!agrupados[p.categoria]) {
+          agrupados[p.categoria] = [];
+        }
+        agrupados[p.categoria].push(p);
+      });
+
+      if (Object.keys(agrupados).length === 0) {
+        lista.innerHTML = '<div class="no-resultados">No se encontraron productos.</div>';
+        return;
+      }
+
+      for (const categoria in agrupados) {
+        const categoriaId = categoria.replace(/\s+/g, '-').toLowerCase();
+
+        lista.innerHTML += `
+          <div class="categoria-header" onclick="toggleCategoria('${categoriaId}')">
+            ${categoria}
+            <span id="arrow-${categoriaId}">▶</span>
+          </div>
+
+          <div id="content-${categoriaId}" class="categoria-content">
+            <div class="productos-grid">
+        `;
+
+        agrupados[categoria].forEach((p) => {
+          lista.innerHTML += `
+            <div class="producto-card">
+              <div class="producto-info">
+                <div class="producto-nombre">${p.nombre}</div>
+                <div class="producto-precio">$${p.precio}</div>
+                <div class="producto-categoria">Categoría: ${p.categoria}</div>
+              </div>
+
+              <div class="acciones">
+                <button onclick="editarProducto('${p.id}', '${p.nombre}', ${p.precio}, '${p.categoria}')">Editar</button>
+                <button onclick="borrarProducto('${p.id}')">Borrar</button>
+              </div>
+            </div>
+          `;
+        });
+
+        lista.innerHTML += `
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function toggleCategoria(id) {
+      const content = document.getElementById(`content-${id}`);
+      const arrow = document.getElementById(`arrow-${id}`);
+      content.classList.toggle("show");
+      arrow.textContent = content.classList.contains("show") ? "▼" : "▶";
+    }
+
+    async function agregarProducto() {
+      const nombre = document.getElementById("nombre").value;
+      const precio = document.getElementById("precio").value;
+      const categoria = document.getElementById("categoria").value;
+
+      if (!nombre || !precio || !categoria) {
+        alert("Completá todos los campos.");
+        return;
+      }
+
+      await addDoc(collection(db, "productos"), {
+        nombre,
+        precio: Number(precio),
+        categoria
+      });
+
+      document.getElementById("nombre").value = "";
+      document.getElementById("precio").value = "";
+      document.getElementById("categoria").value = "";
+
+      cargarProductos();
+    }
+
+    async function editarProducto(id, nombreActual, precioActual, categoriaActual) {
+      const nuevoNombre = prompt("Nuevo nombre:", nombreActual);
+      const nuevoPrecio = prompt("Nuevo precio:", precioActual);
+      const nuevaCategoria = prompt("Nueva categoría:", categoriaActual);
+
+      if (nuevoNombre && nuevoPrecio && nuevaCategoria) {
+        await updateDoc(doc(db, "productos", id), {
+          nombre: nuevoNombre,
+          precio: Number(nuevoPrecio),
+          categoria: nuevaCategoria
+        });
+
+        cargarProductos();
+      }
+    }
+
+    async function borrarProducto(id) {
+      if (!confirm("¿Desea eliminar este producto?")) return;
+
+      await deleteDoc(doc(db, "productos", id));
+      cargarProductos();
+    }
+
+    cargarProductos();
+
+    window.agregarProducto = agregarProducto;
+    window.buscarProducto = buscarProducto;
+    window.toggleCategoria = toggleCategoria;
+    window.editarProducto = editarProducto;
+    window.borrarProducto = borrarProducto;
+  </script>
+
+</body>
+</html>
+
